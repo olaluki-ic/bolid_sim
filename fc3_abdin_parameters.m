@@ -3,7 +3,7 @@
 % Combines Abdin et al. (2016) PEMFC electrochemical parameters with
 % Simscape Moist Air hydrogen transport system (Tank -> PRV -> Anode).
 
-clearvars -except do_not_clear; clc;
+clearvars; clc;
 
 %% 1. Fundamental Constants & Abdin PEMFC Parameters (Abdin et al. 2016)
 % Calibrated for Horizon H-500XP (30-cell PEMFC stack, User Manual specs)
@@ -11,7 +11,7 @@ FC_param.R    = 8.3144;      % Universal gas constant [J/(mol*K)]
 FC_param.F    = 96485;       % Faraday constant [C/mol]
 FC_param.Tref = 298.15;      % Reference temperature [K] (25 degC)
 FC_param.Pref = 1.0;         % Reference pressure [atm]
-FC_param.E0rev= 1.116;       % Calibrated standard reversible potential yielding 28.80 V OCV across 30 cells
+FC_param.E0rev= 1.229;       % Standard reversible potential [V] at 298.15 K
 FC_param.dEdT = -0.9e-3;     % Temperature coefficient of reversible voltage [V/K]
 
 % Molar Masses [g/mol]
@@ -21,33 +21,33 @@ FC_param.MH2O = 18.015;
 
 % Fixed Model Parameters
 FC_param.A         = 55.00;        %Active area of MEA [cm^2]
-FC_param.del_mem   = 0.0050;       % Membrane thickness (40 um, modern reinforced MEA of H-500XP) [cm]
+FC_param.del_mem   = 0.0050;       % Membrane thickness (50 um, modern reinforced MEA of H-500XP) [cm]
 FC_param.del_el    = 0.008;        % Electrode thickness [cm]
 FC_param.dG_an     = 29e3;         % Activation energy anode [J/mol]
 FC_param.dG_cat    = 66e3;         % Activation energy cathode [J/mol]
 FC_param.SH2       = 1.05;         % Hydrogen stoichiometry ratio for dead-ended anode with periodic purge [-]
-FC_param.SO2       = 2.0;          % Oxygen stoichiometry ratio [-]
+FC_param.SO2       = 20;           % Oxygen stoichiometry ratio [-]
 FC_param.rhoH2O    = 1.0;          % Density of liquid water [g/cm^3]
 FC_param.Dw        = 1.28e-6;      % Water diffusion coefficient in membrane [cm^2/s]
 FC_param.eps_por   = 0.3;          % Electrode porosity [-]
 FC_param.xi_tort   = 4.0;          % Electrode tortuosity [-]
 
-% Fitted Model Parameters
-p1 = 1.0e-3;                       % Reference exchange current density anode i0_an_ref [A/cm^2]
-p2 = 1.0e-7;                       % Reference exchange current density cathode i0_cat_ref [A/cm^2]
-p3 = 0.7;                          % Anode charge transfer coefficient alpha_an [-]
-p4 = 1.7;                          % Cathode charge transfer coefficient alpha_cat [-]
+% Fitted Model Parameters 
+p1 = 1.7320e-04;                   % Reference exchange current density anode i0_an_ref [A/cm^2]
+p2 = 1.0000e-11;                   % Reference exchange current density cathode i0_cat_ref [A/cm^2]
+p3 = 0.0141;                       % Anode Tafel slope [V]
+p4 = 0.0100;                       % Cathode Tafel slope [V]
 FC_param.gamma_M   = 47.0;         % Surface roughness factor [-]
 
 % Stack Sizing
 FC_param.Ncell     = 30;           % Number of cells in stack (from H-500XP manual)
 
 % Default Operating Conditions
-FC_param.T         = 328.15;       % Operating temperature [K] (55 degC nominal, max 65 degC in manual)
+FC_param.T         = 308.15;       % Operating temperature [K] (35 degC nominal, max 65 degC in manual)
 FC_param.Pan_nom   = 1.493;        % Nominal anode pressure [atm] (0.5 bar gauge / 1.513 bar abs, H-500XP manual)
 FC_param.Pcat      = 1.493;        % Cathode pressure [atm]
-FC_param.phi_an    = 0.95;         % Anode relative humidity (0 to 1)
-FC_param.phi_cat   = 0.60;         % Cathode relative humidity (0 to 1)
+FC_param.phi_an    = 0.30;         % Anode relative humidity (0 to 1)
+FC_param.phi_cat   = 0.30;         % Cathode relative humidity (0 to 1)
 
 % Effective Diffusion Coefficients
 s_H2  = 2.827; s_O2 = 3.467; s_H2O = 2.641;
@@ -106,19 +106,19 @@ env_yO2      = 0.21;    % [-] Oxygen fraction in air
 Stack_Pressure = 0.05;  % [MPa] 0.5 bar relative gauge setpoint
 
 %% 3. Simulation & Experimental Reference Data
-Tsim = 360;            % [s] Total simulation duration
+Tsim = 1400;            % [s] Total simulation duration
 if exist('voltage.csv', 'file') && exist('power.csv', 'file')
     voltage_data = readmatrix('voltage.csv');
     power_data   = readmatrix('power.csv');
-    i_exp_raw = voltage_data(:, 1);
-    v_cell_exp = voltage_data(:, 2);
-    v_stack_exp = v_cell_exp * 30;
-    p_stack_exp = power_data(:, 2) * 30;
-    vector_time = linspace(0, Tsim, length(i_exp_raw));
-    i = i_exp_raw';
+    I_exp = voltage_data(1:32, 1);
+    V_cell_exp = voltage_data(1:32, 2);
+    V_stack_exp = V_cell_exp * 30;
+    P_stack_exp = power_data(1:32, 2) * 30;
+    vector_time = linspace(0, Tsim, length(I_exp));
+    I = I_exp';
 else
     vector_time = linspace(0, Tsim, 100);
-    i = linspace(0, 45.86, 100);
+    I = linspace(0, 45.86, 100);
 end
 
 fprintf('All parameters for merged model fc3_abdin initialized successfully.\n');
